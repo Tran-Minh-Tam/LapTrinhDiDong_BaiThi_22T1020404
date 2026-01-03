@@ -449,26 +449,35 @@ void _confirmCancel(Booking b) {
         
         // Form nhập điểm đi/đến
         Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(controller: startCtrl, decoration: const InputDecoration(labelText: "Điểm xuất phát", prefixIcon: Icon(Icons.my_location, color: Colors.blue))),
-                const Icon(Icons.more_vert),
-                TextField(controller: endCtrl, decoration: const InputDecoration(labelText: "Điểm đến", prefixIcon: Icon(Icons.location_on, color: Colors.red))),
-                const SizedBox(height: 15),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    // Logic tính toán lộ trình thực tế sẽ đặt ở đây
-                  },
-                  icon: const Icon(Icons.directions),
-                  label: const Text("TÌM TRẠM DỌC ĐƯỜNG"),
-                  style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 45)),
-                )
-              ],
-            ),
+  elevation: 0,
+  color: Colors.grey.shade50,
+  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+  child: Padding(
+    padding: const EdgeInsets.all(12),
+    child: Column(
+      children: [
+        TextField(
+          controller: startCtrl,
+          decoration: const InputDecoration(
+            labelText: "Điểm xuất phát",
+            prefixIcon: Icon(Icons.my_location, color: Colors.blue),
+            border: InputBorder.none,
           ),
         ),
+        // Thay dấu 3 chấm bằng một đường kẻ ngang mờ
+        const Divider(indent: 50, endIndent: 20, height: 1), 
+        TextField(
+          controller: endCtrl,
+          decoration: const InputDecoration(
+            labelText: "Điểm đến",
+            prefixIcon: Icon(Icons.location_on, color: Colors.red),
+            border: InputBorder.none,
+          ),
+        ),
+      ],
+    ),
+  ),
+),
         const SizedBox(height: 25),
 
         // Hiển thị bản đồ mô phỏng (Visual Route)
