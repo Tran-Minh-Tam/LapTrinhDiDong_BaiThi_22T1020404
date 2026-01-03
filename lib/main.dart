@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'user_screen.dart';
 import 'dart:math' show cos, sqrt, asin;
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const EVChargingApp());
@@ -326,22 +327,117 @@ class AdminDashboard extends StatefulWidget {
 }
 
 class _AdminDashboardState extends State<AdminDashboard> {
+  String currentAdminView = "Trạm sạc";
+
+  // Hàm mở GitHub
+  Future<void> _launchGitHub() async {
+    final Uri url = Uri.parse('https://github.com/Tran-Minh-Tam/LapTrinhDiDong_BaiThi_22T1020404.git');
+    if (!await launchUrl(url)) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Không thể mở liên kết GitHub")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Quản trị Huế EV"),
-          bottom: const TabBar(tabs: [Tab(text: "Trạm sạc"), Tab(text: "Đơn đặt"), Tab(text: "Thống kê"),]),
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Quản trị: $currentAdminView"),
+        backgroundColor: Colors.indigo.shade800,
+        foregroundColor: Colors.white,
+      ),
+      // --- THANH BÊN (DRAWER) CHO ADMIN ---
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: const Text("Trần Minh Tâm (Admin)"),
+              accountEmail: const Text("tranminhtamk46@gmail.com"),
+              currentAccountPicture: const CircleAvatar(
+                backgroundImage: AssetImage('anh/anhnguoi.jpg'),
+              ),
+              decoration: BoxDecoration(color: Colors.indigo.shade800),
+            ),
+            _adminDrawerItem(Icons.ev_station, "Trạm sạc"),
+            _adminDrawerItem(Icons.list_alt, "Đơn đặt"),
+            _adminDrawerItem(Icons.analytics, "Thống kê"),
+            _adminDrawerItem(Icons.person, "Thông tin cá nhân"),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.code, color: Colors.black),
+              title: const Text("GitHub Dự án"),
+              onTap: _launchGitHub,
+            ),
+            _adminDrawerItem(Icons.logout, "Đăng xuất", color: Colors.red),
+          ],
         ),
-        body: TabBarView(
-          children: [_buildStationTab(), _buildBookingTab(), const AdminStatisticsTab(), ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _openStationEditor(null),
-          child: const Icon(Icons.add),
-        ),
+      ),
+      body: _buildAdminBody(),
+    );
+  }
+
+  Widget _adminDrawerItem(IconData icon, String title, {Color? color}) {
+    return ListTile(
+      leading: Icon(icon, color: color ?? Colors.indigo),
+      title: Text(title, style: TextStyle(color: color)),
+      onTap: () {
+        if (title == "Đăng xuất") {
+          Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const LoginPage()), (route) => false);
+        } else {
+          setState(() => currentAdminView = title);
+          Navigator.pop(context);
+        }
+      },
+    );
+  }
+
+  Widget _buildAdminBody() {
+  switch (currentAdminView) {
+    case "Trạm sạc":
+      return _buildStationTab(); // Sửa từ StationManagerPage thành _buildStationTab
+    case "Đơn đặt":
+      return _buildBookingTab(); // Sửa từ OrderManagerPage thành _buildBookingTab
+    case "Thống kê":
+      return const AdminStatisticsTab();    // Sửa từ AdminStatPage thành _buildStatTab
+    case "Thông tin cá nhân":
+      return _buildAdminProfile();
+    default:
+      return const Center(child: Text("Đang cập nhật..."));
+  }
+  }
+  // --- GIAO DIỆN THÔNG TIN CÁ NHÂN ADMIN ---
+  Widget _buildAdminProfile() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          const CircleAvatar(
+            radius: 60,
+            backgroundImage: AssetImage('anh/anhnguoi.jpg'),
+          ),
+          const SizedBox(height: 20),
+          _infoTile("Họ và tên", "Trần Minh Tâm"),
+          _infoTile("Số điện thoại", "0786231849"),
+          _infoTile("Ngày sinh", "09/11/2004"),
+          _infoTile("Giới tính", "Nam"),
+          _infoTile("Email", "tranminhtamk46@gmail.com"),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () {},
+            icon: const Icon(Icons.edit),
+            label: const Text("Chỉnh sửa hồ sơ"),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _infoTile(String label, String value) {
+    return Card(
+      child: ListTile(
+        title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        subtitle: Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black)),
       ),
     );
   }
