@@ -431,13 +431,36 @@ void _confirmCancel(Booking b) {
   return 12742 * asin(sqrt(a)); // 2 * R; R = 6371 km
   }
   // --- GIAO DIỆN LỘ TRÌNH ---
-  Widget _buildRoutePlanner() {
-  final TextEditingController startCtrl = TextEditingController(text: "Huế");
-  final TextEditingController endCtrl = TextEditingController(text: "Đà Nẵng");
-  double distanceBetween = 105.0; // Giả định khoảng cách 105km
+    
+  // Khai báo biến trong State để lưu phường đã chọn
+// 1. Khai báo các biến State này ở đầu class _UserMainScreenState
+String startWard = "Phường Vĩnh Ninh";
+String endWard = "Phường Vỹ Dạ";
 
-  // Tìm các trạm sạc "tiện đường" (giả lập logic)
-  List<Station> routeStations = AppData.stations.take(3).toList(); 
+// Hàm tính thời gian di chuyển giả lập
+int _calculateTravelTime(String start, String end) {
+  if (start == end) return 5;
+  return (start.length + end.length - 10).abs() + 10;
+}
+
+// 2. Hàm xây dựng giao diện Lộ trình
+Widget _buildRoutePlanner() {
+  final List<String> hueWards = [
+    "Phường Vĩnh Ninh", "Phường Phú Hội", "Phường Xuân Phú", 
+    "Phường Thuận Hòa", "Phường Tây Lộc", "Phường Kim Long", 
+    "Phường Hương Sơ", "Phường Phú Hậu", "Phường Vỹ Dạ", "Phường An Đông"
+  ];
+
+  int travelTime = _calculateTravelTime(startWard, endWard);
+  double distance = travelTime * 0.4; // Giả định 1km đi hết 2.5 phút
+
+  // Lọc trạm sạc dựa trên phường đang chọn (Logic giống bản cũ của bạn)
+  List<Station> routeStations = AppData.stations.where((s) => 
+    s.name.contains(endWard.replaceAll("Phường ", "")) || 
+    s.name.contains(startWard.replaceAll("Phường ", ""))
+  ).toList();
+
+  if (routeStations.isEmpty) routeStations = AppData.stations.take(3).toList();
 
   return SingleChildScrollView(
     padding: const EdgeInsets.all(16),
@@ -447,44 +470,65 @@ void _confirmCancel(Booking b) {
         const Text("LẬP KẾ HOẠCH HÀNH TRÌNH", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
         const SizedBox(height: 15),
         
-        // Form nhập điểm đi/đến
+        // --- FORM CHỌN PHƯỜNG (Giữ style mờ của bạn nhưng thay TextField bằng Dropdown) ---
         Card(
-  elevation: 0,
-  color: Colors.grey.shade50,
-  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-  child: Padding(
-    padding: const EdgeInsets.all(12),
-    child: Column(
-      children: [
-        TextField(
-          controller: startCtrl,
-          decoration: const InputDecoration(
-            labelText: "Điểm xuất phát",
-            prefixIcon: Icon(Icons.my_location, color: Colors.blue),
-            border: InputBorder.none,
+          elevation: 0,
+          color: Colors.grey.shade50,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Column(
+              children: [
+                DropdownButtonFormField<String>(
+                  value: startWard,
+                  decoration: const InputDecoration(
+                    labelText: "Điểm xuất phát",
+                    prefixIcon: Icon(Icons.my_location, color: Colors.blue),
+                    border: InputBorder.none,
+                  ),
+                  items: hueWards.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+                  onChanged: (val) => setState(() => startWard = val!),
+                ),
+                const Divider(indent: 50, endIndent: 20, height: 1), 
+                DropdownButtonFormField<String>(
+                  value: endWard,
+                  decoration: const InputDecoration(
+                    labelText: "Điểm đến",
+                    prefixIcon: Icon(Icons.location_on, color: Colors.red),
+                    border: InputBorder.none,
+                  ),
+                  items: hueWards.map((w) => DropdownMenuItem(value: w, child: Text(w))).toList(),
+                  onChanged: (val) => setState(() => endWard = val!),
+                ),
+              ],
+            ),
           ),
         ),
-        // Thay dấu 3 chấm bằng một đường kẻ ngang mờ
-        const Divider(indent: 50, endIndent: 20, height: 1), 
-        TextField(
-          controller: endCtrl,
-          decoration: const InputDecoration(
-            labelText: "Điểm đến",
-            prefixIcon: Icon(Icons.location_on, color: Colors.red),
-            border: InputBorder.none,
-          ),
-        ),
-      ],
-    ),
-  ),
-),
         const SizedBox(height: 25),
 
-        // Hiển thị bản đồ mô phỏng (Visual Route)
+        // --- HIỂN THỊ THÔNG TIN THỜI GIAN (Xịn hơn) ---
+        Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(10)),
+          child: Row(
+            children: [
+              const Icon(Icons.timer_outlined, color: Colors.teal),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  "Dự kiến di chuyển: $travelTime phút cho hành trình ${distance.toStringAsFixed(1)} km.",
+                  style: const TextStyle(color: Colors.teal, fontWeight: FontWeight.w500),
+                )
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
+
         const Text("CÁC TRẠM SẠC TRÊN HÀNH TRÌNH", style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
         
-        // Vẽ lộ trình bằng nét đứt
+        // --- DANH SÁCH TIMELINE (Giữ nguyên giao diện Row + Column của bạn) ---
         ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -504,10 +548,11 @@ void _confirmCancel(Booking b) {
                 Expanded(
                   child: Card(
                     child: ListTile(
+                      onTap: () => _showStationDetail(s), // Thêm tính năng bấm vào xem chi tiết
                       title: Text(s.name),
                       subtitle: Text("Cách lộ trình: 0.${index + 1} km"),
                       trailing: TextButton(
-                        onPressed: () => _showBookingDialog(s),
+                        onPressed: () => _showBookingDialog(s), // Nút đặt trước giống hệt yêu cầu
                         child: const Text("Đặt trước"),
                       ),
                     ),
@@ -517,23 +562,40 @@ void _confirmCancel(Booking b) {
             );
           },
         ),
-        
-        const SizedBox(height: 20),
-        Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(10)),
-          child: Row(
-            children: [
-              const Icon(Icons.info_outline, color: Colors.blue),
-              const SizedBox(width: 10),
-              Expanded(child: Text("Hành trình dài $distanceBetween km. Bạn nên sạc tại ${routeStations[1].name} để đảm bảo pin.")),
-            ],
-          ),
-        )
       ],
     ),
   );
 }
+
+// 3. Đừng quên thêm hàm này để xử lý khi bấm vào trạm sạc
+void _showStationDetail(Station s) {
+  showModalBottomSheet(
+    context: context,
+    shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+    builder: (context) => Container(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(s.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const Divider(),
+          ListTile(leading: const Icon(Icons.map), title: Text(s.address)),
+          ListTile(leading: const Icon(Icons.bolt), title: Text("Giá sạc: ${s.pricePerKwh} đ/kWh")),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showBookingDialog(s);
+            },
+            style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 45)),
+            child: const Text("Tiến hành đặt chỗ ngay"),
+          )
+        ],
+      ),
+    ),
+  );
+}
+
 // Hàm kiểm tra xem đơn hàng còn cho phép hủy không (trước 30 phút)
 bool _canCancel(Booking b) {
   try {
